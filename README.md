@@ -7,7 +7,9 @@ Built for the **Google Agentic Hackathon 2025**, CityPulse provides **real-time,
 
 ## 🚀 Live Demo
 
-🔗 
+Firebase:- 🔗 https://citypulse-ai-78b56.web.app/
+
+Vercel:- 🔗https://city-pulse-eight.vercel.app/
 
 ---
 
