@@ -7,7 +7,8 @@ import {
   ArrowDownTrayIcon,
   ChartBarIcon,
   ChartPieIcon,
-  SparklesIcon
+  SparklesIcon,
+  MapPinIcon
 } from '@heroicons/react/24/outline';
 import { mockReports, categories } from '../data/mockData';
 import MapComponent from '../components/MapComponent';
@@ -15,25 +16,14 @@ import ReportCard from '../components/ReportCard';
 import { geminiService } from '../services/geminiService';
 import indianCities from '../data/indianCities';
 import { fetchCityMetrics } from '../services/cityMetricsService';
+import { UserPreferencesProvider, useUserPreferences } from '../contexts/UserPreferencesContext';
+import { usePDF } from 'react-to-pdf';
 
-const robustMockReports = [
-  // Delhi
-  { city: 'Delhi', category: 'Traffic', severity: 'High', description: 'Massive congestion on Ring Road near AIIMS.', timestamp: '2025-07-06T10:00:00Z' },
-  { city: 'Delhi', category: 'Power', severity: 'Medium', description: 'Power outage in South Delhi (Kalkaji).', timestamp: '2025-07-06T09:00:00Z' },
-  { city: 'Delhi', category: 'Civic', severity: 'Low', description: 'Garbage pile-up near Sarojini Nagar market.', timestamp: '2025-07-06T08:30:00Z' },
-  { city: 'Delhi', category: 'Traffic', severity: 'Medium', description: 'Slow-moving traffic on Outer Ring Road.', timestamp: '2025-07-06T07:45:00Z' },
-  { city: 'Delhi', category: 'Power', severity: 'High', description: 'Transformer failure in Connaught Place.', timestamp: '2025-07-06T07:00:00Z' },
-  // Mumbai
-  { city: 'Mumbai', category: 'Civic', severity: 'Medium', description: 'Waterlogging in Andheri East.', timestamp: '2025-07-06T10:15:00Z' },
-  { city: 'Mumbai', category: 'Traffic', severity: 'Low', description: 'Minor accident on Western Express Highway.', timestamp: '2025-07-06T09:30:00Z' },
-  // Bengaluru
-  { city: 'Bengaluru', category: 'Power', severity: 'Low', description: 'Brief power cut in Koramangala.', timestamp: '2025-07-06T08:00:00Z' },
-  { city: 'Bengaluru', category: 'Traffic', severity: 'High', description: 'Heavy traffic on Silk Board junction.', timestamp: '2025-07-06T07:30:00Z' },
-];
 
-const Dashboard = () => {
-  const [reports] = useState(mockReports.length > 0 ? mockReports : robustMockReports);
-  const [filteredReports, setFilteredReports] = useState(mockReports.length > 0 ? mockReports : robustMockReports);
+
+const DashboardContent = () => {
+  const [reports] = useState(mockReports.length > 0 ? mockReports : []);
+  const [filteredReports, setFilteredReports] = useState(mockReports.length > 0 ? mockReports : []);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCity, setSelectedCity] = useState(indianCities[0]);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -41,51 +31,52 @@ const Dashboard = () => {
   const [aiSummary, setAiSummary] = useState('');
   const [exporting, setExporting] = useState(false);
   const [cityMetrics, setCityMetrics] = useState(null);
+  const { userLocation, locationLoading } = useUserPreferences();
+  const { toPDF, targetRef } = usePDF({ filename: 'citypulse-dashboard.pdf' });
 
-  // Fetch city metrics on city change
+  // Auto-select detected location
   useEffect(() => {
-    setCityMetrics(null);
+    if (userLocation && !locationLoading) {
+      const detectedCity = indianCities.find(city => city.name === userLocation.name);
+      if (detectedCity) {
+        setSelectedCity(detectedCity);
+        console.log('📍 Auto-selected detected city:', userLocation.name);
+      }
+    }
+  }, [userLocation, locationLoading]);
+
+  // Fetch city metrics when city changes
+  useEffect(() => {
+    if (!selectedCity) return;
+    
     fetchCityMetrics(selectedCity.name).then(metrics => {
-      // Fallback: If all metrics are null, inject mock values for demo
-      if (
-        (metrics.temperature === null || typeof metrics.temperature !== 'number') &&
-        (metrics.humidity === null || typeof metrics.humidity !== 'number') &&
-        (metrics.aqi === null || typeof metrics.aqi !== 'number')
-      ) {
-        // Demo fallback for Delhi
-        if (selectedCity.name === 'Delhi') {
-          metrics.temperature = 36;
-          metrics.humidity = 48;
-          metrics.aqi = 180;
-          metrics.tips = [
-            'High AQI in winter. Use masks and avoid outdoor activity on smoggy days.',
-            'Fog can disrupt travel in winter. Plan accordingly.'
-          ];
-        } else if (selectedCity.name === 'Mumbai') {
-          metrics.temperature = 30;
-          metrics.humidity = 70;
-          metrics.aqi = 60;
-          metrics.tips = [
-            'Coastal flooding is a concern during monsoons. Stay updated on weather alerts.'
-          ];
-        } else if (selectedCity.name === 'Bengaluru') {
-          metrics.temperature = 28;
-          metrics.humidity = 60;
-          metrics.aqi = 40;
-          metrics.tips = [
-            'Traffic congestion is common. Use public transport when possible.'
-          ];
-        } else {
-          metrics.tips = [metrics.tips || 'No tips available.'];
+      // Ensure tips is always an array
+      if (metrics.tips) {
+        if (typeof metrics.tips === 'string') {
+          metrics.tips = [metrics.tips];
+        } else if (!Array.isArray(metrics.tips)) {
+          metrics.tips = ['No tips available.'];
         }
       } else {
-        // Ensure tips is always an array
-        if (typeof metrics.tips === 'string') metrics.tips = [metrics.tips];
-        if (!Array.isArray(metrics.tips)) metrics.tips = [metrics.tips || 'No tips available.'];
+        metrics.tips = ['Monitor local weather updates', 'Stay informed about traffic conditions'];
       }
+      
       setCityMetrics(metrics);
-      // Log full metrics from state
-      console.log('[CityPulse] Dashboard cityMetrics:', metrics);
+      console.log('[CityPulse] Dashboard cityMetrics loaded:', metrics);
+    }).catch(error => {
+      console.error('[CityPulse] Error fetching city metrics:', error);
+      // Set fallback metrics
+      setCityMetrics({
+        aqi: 100,
+        temperature: 25,
+        humidity: 50,
+        weather: 'Clear',
+        traffic: 'Moderate',
+        noise: 65,
+        events: 5,
+        tips: ['Monitor local weather updates', 'Stay informed about traffic conditions'],
+        lastUpdated: new Date().toISOString()
+      });
     });
   }, [selectedCity]);
 
@@ -165,10 +156,6 @@ const Dashboard = () => {
     if (selectedCity) {
       filtered = filtered.filter(report => report.city === selectedCity.name);
     }
-    // Fallback: If no reports, inject robust mock reports for demo
-    if (filtered.length === 0) {
-      filtered = robustMockReports.filter(r => r.city === selectedCity.name);
-    }
     setFilteredReports(filtered);
   }, [reports, selectedCategory, selectedCity]);
 
@@ -183,12 +170,19 @@ const Dashboard = () => {
   // Export data as CSV (simple mock)
   const handleExportCSV = () => {
     setExporting(true);
-    const csv = [
-      ['Title', 'Category', 'Severity', 'Address', 'Status', 'Timestamp'],
-      ...filteredReports.map(r => [r.title, r.category, r.severity, r.address, r.status, r.timestamp])
-    ].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
+    const csvContent = [
+      ['Category', 'Severity', 'Description', 'City', 'Timestamp'],
+      ...filteredReports.map(r => [
+        r.category,
+        r.severity,
+        r.description,
+        r.city,
+        new Date(r.timestamp).toLocaleString()
+      ])
+    ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'dashboard_reports.csv';
@@ -199,16 +193,16 @@ const Dashboard = () => {
   // Chart data
   const categoryCounts = categories.map(cat => ({
     name: cat.name,
-    count: reports.filter(r => r.category === cat.id && r.city === selectedCity.name).length
+    count: filteredReports.filter(r => r.category === cat.id).length
   }));
   const severityCounts = [
-    { name: 'High', count: reports.filter(r => r.severity === 'high' && r.city === selectedCity.name).length },
-    { name: 'Medium', count: reports.filter(r => r.severity === 'medium' && r.city === selectedCity.name).length },
-    { name: 'Low', count: reports.filter(r => r.severity === 'low' && r.city === selectedCity.name).length }
+    { name: 'High', count: filteredReports.filter(r => r.severity === 'High').length },
+    { name: 'Medium', count: filteredReports.filter(r => r.severity === 'Medium').length },
+    { name: 'Low', count: filteredReports.filter(r => r.severity === 'Low').length }
   ];
 
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300`}>
+    <div ref={targetRef} className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300`}>
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -220,6 +214,26 @@ const Dashboard = () => {
               <p className="text-gray-600 dark:text-gray-300 mt-1">
                 Real-time urban intelligence and incident tracking
               </p>
+              {/* Location Indicator */}
+              {userLocation && !locationLoading && (
+                <div className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full mt-2 w-fit">
+                  <MapPinIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm text-blue-700 dark:text-blue-300">
+                    📍 Near {userLocation.name}
+                    {userLocation.distance && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400 ml-1">
+                        ({userLocation.distance.toFixed(1)}km away)
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+              {locationLoading && (
+                <div className="flex items-center space-x-2 text-gray-500 mt-2">
+                  <MapPinIcon className="h-4 w-4 animate-pulse" />
+                  <span className="text-sm">Detecting location...</span>
+                </div>
+              )}
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">City:</label>
@@ -251,34 +265,31 @@ const Dashboard = () => {
                 <div className="card text-center p-4 min-w-[120px]">
                   <div className="text-xs text-gray-500">AQI</div>
                   <div className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
-                    {typeof cityMetrics.aqi === 'number' ? (
-                      <span className="text-yellow-600 dark:text-yellow-400">{cityMetrics.aqi}</span>
-                    ) : (
-                      <span className="text-gray-400 italic opacity-70" title="Live data not available for this city right now.">N/A</span>
-                    )}
-                  </div>
-                  <div className="text-xs italic text-gray-400 mt-1">
-                    *Data fetched from AQICN API (may vary from CPCB official readings)*
+                    {cityMetrics.aqi || 'N/A'}
                   </div>
                 </div>
                 <div className="card text-center p-4 min-w-[120px]">
                   <div className="text-xs text-gray-500">Temp (°C)</div>
                   <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                    {typeof cityMetrics.temperature === 'number' ? (
-                      <span className="text-red-600 dark:text-red-400">{cityMetrics.temperature}</span>
-                    ) : (
-                      <span className="text-gray-400 italic opacity-70" title="Live data not available for this city right now.">N/A</span>
-                    )}
+                    {cityMetrics.temperature || 'N/A'}
                   </div>
                 </div>
                 <div className="card text-center p-4 min-w-[120px]">
                   <div className="text-xs text-gray-500">Humidity (%)</div>
                   <div className="text-lg font-bold text-green-600 dark:text-green-400">
-                    {typeof cityMetrics.humidity === 'number' ? (
-                      <span className="text-green-600 dark:text-green-400">{cityMetrics.humidity}</span>
-                    ) : (
-                      <span className="text-gray-400 italic opacity-70" title="Live data not available for this city right now.">N/A</span>
-                    )}
+                    {cityMetrics.humidity || 'N/A'}
+                  </div>
+                </div>
+                <div className="card text-center p-4 min-w-[120px]">
+                  <div className="text-xs text-gray-500">Weather</div>
+                  <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {cityMetrics.weather || 'N/A'}
+                  </div>
+                </div>
+                <div className="card text-center p-4 min-w-[120px]">
+                  <div className="text-xs text-gray-500">Traffic</div>
+                  <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                    {cityMetrics.traffic || 'N/A'}
                   </div>
                 </div>
               </>
@@ -310,10 +321,17 @@ const Dashboard = () => {
             <button
               onClick={handleExportCSV}
               disabled={exporting}
-              className="btn-secondary flex items-center space-x-2"
+              className="btn-secondary flex items-center space-x-2 mr-2"
             >
               <ArrowDownTrayIcon className="h-5 w-5" />
               <span>Export CSV</span>
+            </button>
+            <button
+              onClick={toPDF}
+              className="btn-primary flex items-center space-x-2"
+            >
+              <ArrowDownTrayIcon className="h-5 w-5" />
+              <span>Download PDF</span>
             </button>
           </div>
         </div>
@@ -435,28 +453,28 @@ const Dashboard = () => {
           <div className="card text-center">
             <div className="flex justify-center mb-2"><ExclamationTriangleIcon className="h-6 w-6 text-yellow-500" /></div>
             <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-              {filteredReports.filter(r => r.severity === 'high').length}
+              {filteredReports.filter(r => r.severity === 'High').length}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-300">
-              Alerts Detected
+              High Priority
             </div>
           </div>
           <div className="card text-center">
             <div className="flex justify-center mb-2"><ChartPieIcon className="h-6 w-6 text-purple-500" /></div>
             <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-              {categoryCounts.reduce((acc, c) => acc + c.count, 0)}
+              {cityMetrics?.events || 0}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-300">
-              Categorized Reports
+              Today's Events
             </div>
           </div>
           <div className="card text-center">
             <div className="flex justify-center mb-2"><ChartBarIcon className="h-6 w-6 text-green-500" /></div>
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {severityCounts[0].count}
+              {cityMetrics?.noise || 0}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-300">
-              Power Failures
+              Noise Level (dB)
             </div>
           </div>
         </motion.div>
@@ -481,10 +499,17 @@ const Dashboard = () => {
           <div className="flex gap-8 items-center justify-center">
             {severityCounts.map((sev, idx) => (
               <div key={sev.name} className="flex flex-col items-center">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${idx === 0 ? 'bg-red-500' : idx === 1 ? 'bg-yellow-500' : 'bg-green-500'} bg-opacity-80 text-white font-bold text-lg`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                  idx === 0
+                    ? 'bg-red-500'
+                    : idx === 1
+                    ? 'bg-yellow-500'
+                    : 'bg-green-500'
+                } bg-opacity-80 text-white font-bold text-lg`}
+                >
                   {sev.count}
                 </div>
-                <span className="text-xs text-gray-700 dark:text-gray-300">{sev.name}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{sev.name}</span>
               </div>
             ))}
           </div>
@@ -492,6 +517,14 @@ const Dashboard = () => {
       </div>
     </div>
   );
+}
+
+const Dashboard = () => {
+  return (
+    <UserPreferencesProvider>
+      <DashboardContent />
+    </UserPreferencesProvider>
+  );
 };
 
-export default Dashboard; 
+export default Dashboard;

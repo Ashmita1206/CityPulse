@@ -35,10 +35,58 @@ export const geminiService = {
         prediction: "Weather to improve by evening",
         sentiment: "Cautious",
         recommendations: ["Drive carefully", "Carry rain protection"]
+      },
+      general: {
+        summary: "Urban activity analysis completed with mixed conditions",
+        severity: "Medium",
+        prediction: "Conditions expected to remain stable",
+        sentiment: "Neutral",
+        recommendations: ["Monitor local updates", "Stay informed"]
       }
     };
 
     return mockResponses[category] || mockResponses.traffic;
+  },
+
+  // Summarize reports - used by agent modules
+  async summarizeReports(descriptions, tag, area) {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    const mockSummaries = {
+      traffic: {
+        summary: `${area ? `Traffic issues in ${area}` : 'Traffic congestion detected'}: ${descriptions.substring(0, 100)}...`,
+        severity: "High",
+        topIssues: ["Congestion", "Delays", "Accidents"],
+        recommendations: ["Use alternative routes", "Consider public transport"]
+      },
+      power: {
+        summary: `${area ? `Power issues in ${area}` : 'Power problems reported'}: ${descriptions.substring(0, 100)}...`,
+        severity: "Medium",
+        topIssues: ["Outages", "Transformer issues", "Load shedding"],
+        recommendations: ["Contact electricity board", "Use backup power"]
+      },
+      civic: {
+        summary: `${area ? `Civic issues in ${area}` : 'Civic problems detected'}: ${descriptions.substring(0, 100)}...`,
+        severity: "Medium",
+        topIssues: ["Waterlogging", "Garbage", "Road damage"],
+        recommendations: ["Contact municipal authorities", "Report issues"]
+      },
+      weather: {
+        summary: `${area ? `Weather issues in ${area}` : 'Weather problems reported'}: ${descriptions.substring(0, 100)}...`,
+        severity: "Low",
+        topIssues: ["Rain", "Fog", "Visibility"],
+        recommendations: ["Drive carefully", "Stay updated"]
+      }
+    };
+
+    const category = tag?.toLowerCase() || 'general';
+    return mockSummaries[category] || {
+      summary: `${area ? `Activity in ${area}` : 'Recent activity'}: ${descriptions.substring(0, 100)}...`,
+      severity: "Medium",
+      topIssues: ["General issues"],
+      recommendations: ["Monitor situation", "Stay informed"]
+    };
   },
 
   // Analyze images/videos (multimodal analysis)

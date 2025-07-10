@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import PWAInstallButton from './PWAInstallButton';
 import {
   SunIcon,
   MoonIcon,
@@ -27,6 +28,9 @@ const Navbar = () => {
   const [search, setSearch] = useState('');
   const [showColorMenu, setShowColorMenu] = useState(false);
 
+  // Mock admin check - in real app this would come from user context
+  const isAdmin = currentUser?.email === 'admin@citypulse.com' || true; // For demo purposes
+
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Dashboard', href: '/dashboard' },
@@ -35,6 +39,12 @@ const Navbar = () => {
     { name: 'Subscribe', href: '/subscribe' },
     { name: 'History', href: '/history' },
     { name: 'About', href: '/about' },
+    { name: 'Mood Map', href: '/moodmap' },
+    { name: 'Alerts', href: '/alerts' },
+    { name: 'Trends', href: '/trends' },
+    { name: 'Compare', href: '/compare' },
+    { name: 'Social', href: '/social' },
+    ...(isAdmin ? [{ name: 'Admin', href: '/admin' }] : []),
   ];
 
   const handleLogout = async () => {
@@ -104,6 +114,9 @@ const Navbar = () => {
 
           {/* Right side buttons */}
           <div className="flex items-center space-x-2 md:space-x-4">
+            {/* PWA Install Button */}
+            <PWAInstallButton />
+
             {/* Theme Color Selector */}
             <div className="relative">
               <button

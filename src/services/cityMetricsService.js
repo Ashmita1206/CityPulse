@@ -2,165 +2,140 @@
 // Fetches live weather and AQI for a given city using OpenWeatherMap and OpenAQ
 // Returns: { temperature, humidity, aqi, population, tips }
 
-import indianCities from '../data/indianCities';
+import { cityMetricsData } from '../data/mockData';
 
-// Use the provided OpenWeatherMap API key directly
-const OPENWEATHERMAP_API_KEY = 'ae1a283ddd4a9dda00929c1634b6bde4';
-const OPENWEATHERMAP_URL = 'https://api.openweathermap.org/data/2.5/weather';
-
-// GeoDB Cities API (RapidAPI endpoint)
-console.log('[CityPulse] Using RapidAPI Key:', process.env.REACT_APP_RAPIDAPI_KEY);
-
-const fetchPopulationByCoords = async (lat, lon) => {
-  const url = `https://wft-geo-db.p.rapidapi.com/v1/geo/cities?latitude=${lat}&longitude=${lon}&radius=50&limit=1`;
-  const options = {
-    method: 'GET',
-    headers: {
-      'X-RapidAPI-Key': process.env.REACT_APP_RAPIDAPI_KEY,
-      'X-RapidAPI-Host': 'wft-geo-db.p.rapidapi.com',
-    },
+/**
+ * Fetch city metrics including AQI, weather, traffic, and other urban indicators
+ * @param {string} cityName - Name of the city
+ * @returns {Promise<Object>} City metrics data
+ */
+export async function fetchCityMetrics(cityName) {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  // Get metrics from our comprehensive mock data
+  const metrics = cityMetricsData[cityName];
+  
+  if (metrics) {
+    return {
+      ...metrics,
+      // Add some dynamic variations to make it feel more real
+      aqi: metrics.aqi + Math.floor(Math.random() * 20) - 10, // ±10 variation
+      temperature: metrics.temperature + (Math.random() * 2 - 1), // ±1°C variation
+      humidity: metrics.humidity + Math.floor(Math.random() * 10) - 5, // ±5% variation
+      noise: metrics.noise + Math.floor(Math.random() * 6) - 3, // ±3dB variation
+      events: metrics.events + Math.floor(Math.random() * 5), // 0-4 additional events
+      lastUpdated: new Date().toISOString()
+    };
+  }
+  
+  // Fallback for unknown cities
+  return {
+    aqi: 100 + Math.floor(Math.random() * 100),
+    temperature: 25 + Math.floor(Math.random() * 15),
+    humidity: 50 + Math.floor(Math.random() * 30),
+    weather: 'Clear',
+    traffic: 'Moderate',
+    noise: 65 + Math.floor(Math.random() * 15),
+    events: 5 + Math.floor(Math.random() * 10),
+    tips: ['Monitor local weather updates', 'Stay informed about traffic conditions'],
+    lastUpdated: new Date().toISOString()
   };
-  try {
-    const response = await fetch(url, options);
-    if (response.status === 429) {
-      console.error('[CityPulse] Population API rate limit hit (429)');
-      return 'Data not available';
-    }
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    const result = await response.json();
-    const population = result.data?.[0]?.population || 'Data not available';
-    return population;
-  } catch (error) {
-    console.error('[CityPulse] Population API error:', error);
-    return 'Data not available';
-  }
-};
-
-// Remove population logic, fetchPopulationByCoords, and all references to population in fetchCityMetrics and logs.
-
-const cityTips = {
-  'Mumbai': 'Coastal flooding is a concern during monsoons. Stay updated on weather alerts.',
-  'Delhi': 'High AQI in winter. Use masks and avoid outdoor activity on smoggy days.',
-  'Bengaluru': 'Traffic congestion is common. Use public transport when possible.',
-  'Kolkata': 'Prepare for heavy rains during monsoon. Watch for waterlogging.',
-  'Chennai': 'Cyclones can affect the city. Follow official advisories during storms.',
-  'Hyderabad': 'Summer heat can be intense. Stay hydrated and avoid peak sun hours.',
-  'Pune': 'Air quality is generally good, but check AQI during winter.',
-  'Ahmedabad': 'Extreme heat in summer. Use sun protection and stay indoors at noon.',
-  'Jaipur': 'Desert climate means hot days and cool nights. Dress accordingly.',
-  'Lucknow': 'Fog can disrupt travel in winter. Plan accordingly.'
-};
-
-// 1️⃣ Add your AQICN API token here
-const WAQI_API_KEY = process.env.REACT_APP_WAQI_API_KEY || "f23ee289fb9a24ca70dd6b409eae03cd50781aa2";
-
-// 2️⃣ Function to fetch AQI from AQICN
-export async function fetchAQI(lat, lon) {
-  try {
-    const url = `https://api.waqi.info/feed/geo:${lat};${lon}/?token=${WAQI_API_KEY}`;
-    console.log("[CityPulse] AQICN URL:", url);
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.status === "ok" && data.data && data.data.aqi !== undefined) {
-      console.log("[CityPulse] AQICN AQI Value:", data.data.aqi);
-      return data.data.aqi;
-    } else {
-      console.warn("[CityPulse] AQICN returned no valid data:", data);
-      return null;
-    }
-  } catch (error) {
-    console.error("[CityPulse] AQICN API error:", error);
-    return null;
-  }
 }
 
-export async function fetchCityMetrics(cityName) {
-  const city = indianCities.find(c => c.name === cityName);
-  if (!city) {
-    console.warn(`[CityPulse] City not found in indianCities.js:`, cityName);
-    throw new Error('City not found');
-  }
-  if (typeof city.lat === 'undefined' || typeof city.lon === 'undefined') {
-    console.warn(`[CityPulse] Coordinates missing for city:`, cityName, city);
-  }
-  if (!OPENWEATHERMAP_API_KEY) {
-    console.warn('[CityPulse] OpenWeatherMap API key is missing.');
-  }
-  console.log(`[CityPulse] Fetching weather for city: ${cityName} with lat/lon: ${city.lat}, ${city.lon}`);
+/**
+ * Fetch metrics for multiple cities
+ * @param {Array<string>} cityNames - Array of city names
+ * @returns {Promise<Array>} Array of city metrics
+ */
+export async function fetchMultiCityMetrics(cityNames) {
+  const metrics = await Promise.all(
+    cityNames.map(cityName => fetchCityMetrics(cityName))
+  );
+  return metrics;
+}
 
-  // 1. Fetch weather from OpenWeatherMap
-  let temperature = 'Data not available', humidity = 'Data not available', weatherApiError = null;
-  const weatherUrl = `${OPENWEATHERMAP_URL}?lat=${city.lat}&lon=${city.lon}&appid=${OPENWEATHERMAP_API_KEY}&units=metric`;
-  console.log('[CityPulse] OpenWeatherMap URL:', weatherUrl);
-  try {
-    const weatherRes = await fetch(weatherUrl);
-    if (weatherRes.ok) {
-      const weatherData = await weatherRes.json();
-      console.log('[CityPulse] OpenWeatherMap data:', weatherData);
-      if (typeof weatherData.main?.temp === 'number') {
-        temperature = weatherData.main.temp;
-      } else {
-        console.warn('[CityPulse] temperature is not available or not a number:', weatherData.main?.temp);
-      }
-      if (typeof weatherData.main?.humidity === 'number') {
-        humidity = weatherData.main.humidity;
-      } else {
-        console.warn('[CityPulse] humidity is not available or not a number:', weatherData.main?.humidity);
-      }
-    } else {
-      weatherApiError = `OpenWeatherMap error: ${weatherRes.status}`;
-      const errorData = await weatherRes.json().catch(() => ({}));
-      console.warn(weatherApiError, errorData);
+/**
+ * Get historical metrics for trend analysis
+ * @param {string} cityName - Name of the city
+ * @param {number} days - Number of days of historical data
+ * @returns {Promise<Array>} Historical metrics data
+ */
+export async function fetchHistoricalMetrics(cityName, days = 7) {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  const baseMetrics = cityMetricsData[cityName] || {
+    aqi: 100,
+    temperature: 25,
+    humidity: 50,
+    noise: 65,
+    events: 5
+  };
+  
+  const historicalData = [];
+  const now = new Date();
+  
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    
+    historicalData.push({
+      date: date.toISOString().split('T')[0],
+      aqi: baseMetrics.aqi + Math.floor(Math.random() * 40) - 20,
+      temperature: baseMetrics.temperature + (Math.random() * 4 - 2),
+      humidity: baseMetrics.humidity + Math.floor(Math.random() * 20) - 10,
+      noise: baseMetrics.noise + Math.floor(Math.random() * 10) - 5,
+      events: Math.max(0, baseMetrics.events + Math.floor(Math.random() * 6) - 3)
+    });
+  }
+  
+  return historicalData;
+}
+
+/**
+ * Get comparative metrics between cities
+ * @param {Array<string>} cityNames - Array of city names to compare
+ * @returns {Promise<Object>} Comparative analysis
+ */
+export async function fetchComparativeMetrics(cityNames) {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  const metrics = await fetchMultiCityMetrics(cityNames);
+  
+  // Generate comparative insights
+  const insights = [];
+  
+  if (cityNames.length >= 2) {
+    const [city1, city2] = cityNames;
+    const [metrics1, metrics2] = metrics;
+    
+    // AQI comparison
+    if (metrics1.aqi > metrics2.aqi * 1.5) {
+      insights.push(`${city1} has significantly higher pollution (${Math.round(metrics1.aqi/metrics2.aqi)}x) compared to ${city2}`);
+    } else if (metrics2.aqi > metrics1.aqi * 1.5) {
+      insights.push(`${city2} has significantly higher pollution (${Math.round(metrics2.aqi/metrics1.aqi)}x) compared to ${city1}`);
     }
-  } catch (e) {
-    weatherApiError = e.message;
-    console.error('OpenWeatherMap fetch error:', e);
-  }
-
-  // 2. Fetch AQI from AQICN
-  let aqi = 'Data not available';
-  try {
-    const aqiValue = await fetchAQI(city.lat, city.lon);
-    if (typeof aqiValue === 'number') {
-      aqi = aqiValue;
+    
+    // Temperature comparison
+    if (Math.abs(metrics1.temperature - metrics2.temperature) > 5) {
+      insights.push(`${city1} is ${Math.round(metrics1.temperature - metrics2.temperature)}°C ${metrics1.temperature > metrics2.temperature ? 'warmer' : 'cooler'} than ${city2}`);
     }
-  } catch (e) {
-    console.error('[CityPulse] AQICN fetch error:', e);
-    aqi = 'Data not available';
+    
+    // Events comparison
+    if (metrics1.events > metrics2.events * 1.5) {
+      insights.push(`${city1} shows ${metrics1.events - metrics2.events} more events today compared to ${city2}`);
+    }
+    
+    // Traffic comparison
+    if (metrics1.traffic === 'Heavy' && metrics2.traffic === 'Light') {
+      insights.push(`${city1} experiencing heavy traffic while ${city2} has light traffic conditions`);
+    }
   }
-
-  // 3. Fetch population
-  let population = 'Data not available';
-  try {
-    population = await fetchPopulationByCoords(city.lat, city.lon);
-  } catch (e) {
-    console.error('[CityPulse] Population fetch error:', e);
-    population = 'Data not available';
-  }
-
-  // 4. Tips: Only the relevant tip for the city, always as array
-  let tips = cityTips[cityName] ? [cityTips[cityName]] : [];
-
-  // 5. Log extracted values
-  console.log('[CityPulse] Extracted metrics:', { temperature, humidity, aqi, population });
-  if (temperature === 'Data not available') console.warn('[CityPulse] Fallback: temperature is unavailable');
-  if (humidity === 'Data not available') console.warn('[CityPulse] Fallback: humidity is unavailable');
-  if (aqi === 'Data not available') console.warn('[CityPulse] Fallback: AQI is unavailable');
-  if (population === 'Data not available') console.warn('[CityPulse] Fallback: Population is unavailable');
-
-  // 6. Final log before return
-  console.log('[CityPulse] Final city metrics:', {
-    temperature,
-    humidity,
-    aqi,
-    population,
-  });
 
   return {
-    temperature: typeof temperature === 'number' ? temperature : 'Data not available',
-    humidity: typeof humidity === 'number' ? humidity : 'Data not available',
-    aqi: typeof aqi === 'number' ? aqi : 'Data not available',
-    population: typeof population === 'number' ? population : 'Data not available',
-    tips
+    cities: cityNames,
+    metrics,
+    insights,
+    comparisonDate: new Date().toISOString()
   };
 } 

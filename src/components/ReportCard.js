@@ -77,13 +77,13 @@ const ReportCard = ({ report, isSelected, onClick }) => {
           </div>
           
           <p className="text-xs text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">
-            {report.aiSummary}
+            {report.description}
           </p>
           
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
             <div className="flex items-center space-x-1">
               <MapPinIcon className="h-3 w-3" />
-              <span className="truncate">{report.address}</span>
+              <span className="truncate">{report.address || report.city || 'Unknown location'}</span>
             </div>
             <div className="flex items-center space-x-1">
               <ClockIcon className="h-3 w-3" />

@@ -21,7 +21,7 @@ function ChangeMapView({ center, zoom }) {
   return null;
 }
 
-const MapComponent = ({ reports = [], city, onMarkerClick, selectedReport, showWeather = true, showAQI = true }) => {
+const MapComponent = ({ reports = [], markers, city, onMarkerClick, selectedReport, showWeather = true, showAQI = true }) => {
   // Default to India center if no city
   const center = city ? [city.lat, city.lon] : [22.9734, 78.6569];
   const zoom = city ? 11 : 5;
@@ -37,7 +37,22 @@ const MapComponent = ({ reports = [], city, onMarkerClick, selectedReport, showW
     shadowSize: [41, 41]
   });
 
-    return (
+  // Use markers prop if provided, else fallback to reports
+  const markerData = Array.isArray(markers) && markers.length > 0
+    ? markers.map(m => ({
+        lat: m.lat,
+        lng: m.lng,
+        title: m.title,
+        id: m.id
+      }))
+    : (Array.isArray(reports) ? reports.map(r => ({
+        lat: r.lat || r.location?.lat,
+        lng: r.lon || r.lng || r.location?.lng,
+        title: r.title || r.description,
+        id: r.id
+      })) : []);
+
+  return (
     <div className="map-container w-full h-full rounded-lg overflow-hidden">
       <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
         <ChangeMapView center={center} zoom={zoom} />
@@ -59,25 +74,25 @@ const MapComponent = ({ reports = [], city, onMarkerClick, selectedReport, showW
             zIndex={101}
           />
         )}
-        {/* Markers for reports */}
-        {reports.map((report) => (
-          report.lat && report.lon && (
+        {/* Markers for reports or markers prop */}
+        {markerData.map((marker) => (
+          marker.lat && marker.lng && (
             <Marker
-                key={report.id}
-              position={[report.lat, report.lon]}
+              key={marker.id}
+              position={[marker.lat, marker.lng]}
               icon={markerIcon}
-              eventHandlers={{ click: () => onMarkerClick && onMarkerClick(report) }}
             >
               <Popup>
-                <div className="text-sm font-semibold">{report.title}</div>
-                <div className="text-xs text-gray-500">{report.address}</div>
-                <div className="text-xs">{report.category}</div>
+                <div>
+                  <p className="font-semibold">{marker.title}</p>
+                  <p className="text-xs text-gray-500">ID: {marker.id}</p>
+                </div>
               </Popup>
             </Marker>
           )
         ))}
       </MapContainer>
-      </div>
+    </div>
   );
 };
 
