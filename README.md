@@ -1,37 +1,39 @@
 # 🌆 CityPulse
 
 **Smart Real-time City Dashboard**  
-Built for the **Google Agentic Hackathon**, CityPulse offers live insights into key city health metrics—**Air Quality Index (AQI)**, **Temperature**, and **Population**—using intelligent geolocation and multiple open APIs.
-
-![CityPulse Banner](./public/preview.png) <!-- Replace with your actual screenshot -->
+Built for the **Google Agentic Hackathon 2025**, CityPulse provides **real-time, AI-powered insights** into urban metrics such as Air Quality, Weather, Population, and Live City Alerts. Stay informed and connected—wherever you are.
 
 ---
 
 ## 🚀 Live Demo
 
-🔗 [citypulse.vercel.app](https://citypulse.vercel.app) *(Update this once deployed)*
+🔗 
 
 ---
 
 ## 🧠 Features
 
-- 📍 Auto-detects your current city
-- 🌫️ Real-time AQI data (via WAQI)
-- 🌡️ Live temperature (via OpenWeather)
-- 🧑‍🤝‍🧑 City population insights (via GeoDB)
-- 📊 Historical reports and predictions
-- 📥 CSV export for metrics
-- 💡 Smart, reactive, and responsive UI
+- 📍 Auto-detects your current city using geolocation
+- 🌫️ Real-time **Air Quality Index (AQI)** via WAQI
+- 🌡️ Live **temperature & weather** via OpenWeatherMap
+- 🧑‍🤝‍🧑 City **population insights** via GeoDB Cities
+- 📢 Real-time **incident alerts & summaries**
+- 📊 AI-generated **historical reports** and **predictive insights**
+- 📥 Export metrics as **CSV or PDF**
+- 🌙 Toggle between **Dark & Light** mode
+- 📈 Beautiful, responsive **UI dashboard** with charts & maps
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React.js, Tailwind CSS
-- **State**: React Hooks
-- **Routing**: React Router
-- **APIs**: WAQI, OpenWeatherMap, GeoDB Cities
-- **Tools**: Vite, jsPDF, Chart.js
+| Layer       | Technologies                                 |
+|-------------|----------------------------------------------|
+| Frontend    | React.js, Tailwind CSS, Chart.js             |
+| State Mgmt  | React Hooks                                   |
+| Routing     | React Router                                  |
+| APIs Used   | WAQI, OpenWeatherMap, GeoDB Cities, Gemini AI |
+| Dev Tools   | Vite, jsPDF                                   |
 
 ---
 
@@ -40,14 +42,17 @@ Built for the **Google Agentic Hackathon**, CityPulse offers live insights into 
 1. **Clone the repository**
    ```bash
    git clone https://github.com/yourusername/citypulse-ai.git
-   cd citypulse-ai
+   cd CityPulse
 2. **Install dependencies**
+   ```bash
    npm install
 3. Create a .env file in root
+   ```bash
    REACT_APP_OPENWEATHER_API_KEY=your_openweather_key
    REACT_APP_WAQI_API_KEY=your_waqi_key
    REACT_APP_RAPIDAPI_KEY=your_rapidapi_key
 4. Start the development server
+   ```bash
    npm start
 
 📁 Project Structure
@@ -55,18 +60,16 @@ Built for the **Google Agentic Hackathon**, CityPulse offers live insights into 
 citypulse-ai/
 ├── public/
 ├── src/
-│   ├── assets/        # Icons, images, logos
-│   ├── components/    # UI components
-│   ├── pages/         # Dashboard, Report, Predict
-│   ├── services/      # API handling
-│   └── App.js         # Main app routes
-├── .env.example       # Sample env vars
+│   ├── assets/          # Icons, images, logos
+│   ├── components/      # UI components
+│   ├── pages/           # Dashboard, Compare, Alerts, etc.
+│   ├── sentiment/       # Sentiment & mood analysis logic
+│   ├── services/        # External API integrations
+│   ├── data/            # Local or fallback data
+│   └── App.js           # Main app router
+├── .env.example         # Example env config
 ├── README.md
 ├── LICENSE
-
-💼 License
-This project is licensed under the MIT License.
-See LICENSE for more details.
 
 ## 👩‍💻 Team Credits
 
@@ -90,4 +93,9 @@ We welcome improvements and ideas even post-hackathon!
 Team CityPulse
 
 Built with ❤️ for the Google Agentic Hackathon 2025
+
+💼 License
+This project is licensed under the MIT License.
+See LICENSE for more details.
+
 ---
